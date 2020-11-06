@@ -32,7 +32,7 @@ dp[l] [r] = (s[l]==s[r] && (r-l==1 || dp[l+1] [r-1])) ? true : false
 ### code
 
      class Solution {
-	public:
+    public:
     string longestPalindrome(string s) {
         //动态规划做
         int l=s.size();
@@ -60,7 +60,7 @@ dp[l] [r] = (s[l]==s[r] && (r-l==1 || dp[l+1] [r-1])) ? true : false
         return s.substr(max_l,max_r-max_l+1);
             
     }
-	};
+    };
 
 ### 思路
 
@@ -72,7 +72,7 @@ dp[l] [r] = (s[l]==s[r] && (r-l==1 || dp[l+1] [r-1])) ? true : false
 ### code
 
      class Solution {
-	public:
+    public:
     int f(string &s,int i,int len)
     {
         int l1=1;
@@ -110,5 +110,138 @@ dp[l] [r] = (s[l]==s[r] && (r-l==1 || dp[l+1] [r-1])) ? true : false
         return s.substr(start,max_len);
             
     }
-	};
+    };
 
+\### 思路
+
+   上诉提到的都是有冗余计算的，这是因为回文串长度的奇偶性造成了不同性质的对称轴位置，前面的解法会当成两种情况处理，可看下面几张图：
+
+中心拓展法：![img](https://img-blog.csdnimg.cn/20200115193914137.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+
+
+动态规划：![img](https://img-blog.csdnimg.cn/20200115193935637.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+
+
+马拉车：![img](https://img-blog.csdnimg.cn/20200115193943986.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+
+
+这是因为由很多子串会被重复的访问，例如下面这个字符串：
+
+![img](https://img-blog.csdnimg.cn/20200115193958706.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+
+
+​    如果利用上面最快的扩展法，我们可以看到以d为中心的时候，aba被遍历过一次，以b为中心的时候，两个a又被遍历了一次，Manacher可以避免这些计算。
+
+​    首先是第一步，为了避免奇偶两种情况，对字符串做一个预处理，在每个字符的两边插上一个特殊字符，要求这个特殊字符是不会在原串中出现的。这样会使得所有的串都是奇数长度的，因为假设原字符串长度为n，现在字符串长度为3*n，肯定奇数，并且回文串的中心肯定是个奇数，因为每个原来的字符至少两边有个相等的特殊字符。
+
+
+
+​    第二步就是解决重复访问的问题，因为回文串的中心为单数，我们用temp[i]表示以i位置为中心的回文字符串最左或者最右到达i的长度，用temp[i] 表示以第 i 个字符为对称轴的回文串的回文半径，因为处理时从左往右的，所以就定义temp[i] 为第 i 个字符为对称轴的回文串的最右一个字符与字符 i 的距离，加上本字符，具体如下：
+
+![img](https://img-blog.csdnimg.cn/20200115194108288.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+​    可以通过上表看出，其实temp[i]-1就是以i为中心的最长回文字符串，所以只要求出temp数组，基本就可以搞定了所以引入一个辅助变量 Max_Right，表示以及访问了的所有回文子串能到达的最右的一个字符的位置。另外还要记录下 Max_Right 对应的回文串的对称轴所在的位置，记为 pos,具体的位置如下所示：
+
+![img](https://img-blog.csdnimg.cn/20200115194124898.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+
+
+   我们从左往右地访问字符串来求temp，假设当前访问到的位置为i。对应上图，因为我们是从左到右遍历i, 而pos是遍历到的所有回文子串中某个对称轴位置（MaxRight最大时），所以必然有pos<=i，然后要处理的情况就是i在max_right左边还是右边。
+
+ 1、i在max_right右边，如下图所示：
+
+![img](https://img-blog.csdnimg.cn/20200115194137656.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+
+
+这种情况下因为s[i]左右的字符串都未处理过，所以只能让Temp[i]=1,后续在做处理。
+
+2、i在max_right的左边
+
+2.1 i关于pos对称的那个点的最远字符未超过以pos为中心的回文字符串
+
+![img](https://img-blog.csdnimg.cn/20200115194234810.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+
+
+​    点j是点i关于pos的对称点，因为pos是回文字符串的中心，所以i与j肯定相同，并且i与j两边的元素都是相同的，所以只要j的回文字符串在在以pos点为中心的回文字符串的范围内，那么肯定以i为中心的回文字符串也不会超出以pos点为中心的回文字符串，所以直接让temp[i]=temp[j]就可以了。
+
+2.2 i关于pos对称的那个点的最远字符超过以pos为中心的回文字符串
+
+![img](https://img-blog.csdnimg.cn/20200115194249540.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+
+
+​     同理，点j是点i关于pos的对称点，因为pos是回文字符串的中心，所以i与j肯定相同，并且i与j两边的元素都是相同的，但是以j为中心的回文字符串已经包含以pos为中心的回文字符串外面的元素了，所以依靠以pos为中心的回文字符串所推导出来的i与j附近元素相等这一结论不适用于字符串外的元素，所以只能temp[i]=max_right-i,代表通过以pos为中心的字符串所能保证的最远距离。
+
+ 所以就得到对于temp的赋值程序：
+
+```
+if(i<max_right)temp[i]=min(temp[2*pos-i],max_right-i);
+
+        else temp[i]=1;
+```
+
+![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+​      然后就是对数据进行更新，temp[i]的值因为不知道是(可以针对每个情况单独写)哪一种情况下赋值的，所以统一要往外扩展，扩展结束之后需要更新这四个max_right、 pos、res、res_pos。其中res代表最长的temp[i]，res_pos存储i。
+
+
+
+最后返回最终的结果就是
+
+```cpp
+s.substr((res_pos-res+1)/2,res-1);
+```
+
+![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
+
+因为上诉提到，temp[i]-1等于该位置的元素在原来的数组中的回文字符串长度，而res_pos-res+1可以得出以i为中心，以temp[i]-1为长度的字符串的第一个元素的位置。
+
+
+
+
+\### code
+
+```cpp
+class Solution {
+public:
+   string longestPalindrome(string s)
+{
+	if(s.size()==0)
+        return "";
+    string s1;
+    for(auto a:s)
+    {
+        s1=s1+'#';
+        s1=s1+a;
+    }
+    s1=s1+'#';
+    int l=s1.size();
+    vector<int>temp(l,0);
+    int max_right=0,pos=0,res=0,res_pos=0;
+    for(int i=0;i<l;++i)
+    {
+        if(i<max_right)temp[i]=min(temp[2*pos-i],max_right-i);
+        else temp[i]=1;
+        while(i-temp[i]>=0&&i+temp[i]<l&&s1[i-temp[i]]==s1[i+temp[i]])
+            temp[i]++;
+        if(i+temp[i]-1>max_right)
+            {max_right=i+temp[i]-1;
+            pos=i;}
+        if(res<temp[i])
+        {
+            res=temp[i];
+            res_pos=i;
+        }
+    }
+    return s.substr((res_pos-res+1)/2,res-1);
+}
+};
+```
+
+![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)
