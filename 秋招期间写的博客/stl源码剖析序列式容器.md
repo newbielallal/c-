@@ -98,7 +98,7 @@ vector定义的源码如下所示：
 	}
 
 因为vector是一个连续的线性空间，所以它的迭代器只要普通指针就可以满足了，并且普通指针也支持随机存取，所以vector提供的是一个random access iterators。它的数据机构很简单，以两个迭代器start以及finish分别指向配置得来的连续空间中目前被使用的范围，以end_of_storage代表整块连续空间的尾端。为了降低空间配置的速度成本，一般情况下实际配置大小会比需求更大一些，这就是capacity的概念，下面这张图可以很好的解释上面这段话：
-![](1.png)
+![1](stl源码剖析序列式容器.assets/1.png)
 配置空间的程序为：
 
 	template<calss T,class Alloc>
@@ -108,18 +108,18 @@ vector定义的源码如下所示：
 	   //还有备用空间，在备用空间起始处构造元素，并将最后一个元素值设为其初值。
 			construct(finish,*(finish-1));
 		++finish;
-       //调整finish的位置。
+	   //调整finish的位置。
 		T x_copy=x;
-      //copy_backward是从后往前赋值，具体见下附图，这样刚好能够不覆盖掉元素。
+	  //copy_backward是从后往前赋值，具体见下附图，这样刚好能够不覆盖掉元素。
 		copy_backward(position,finsh-2,finish-1);
-      //将插入值赋给指针位置position。
+	  //将插入值赋给指针位置position。
 		*position =x_copy;
 	}
 	else//无备用空间
 	{
 		const size_type old_size=size();//取出原来的大小
 		const size_type len=old_size!=0?2*old_size:1;
-        //原来大小为0，就配置一个元素空间，否则就是配置原来大小的两倍空间，前半段用来放置原来的数据，后半段放新数据。
+	    //原来大小为0，就配置一个元素空间，否则就是配置原来大小的两倍空间，前半段用来放置原来的数据，后半段放新数据。
 		iterator new_start=data_allocator::allocate(len);//配置空间。
 		iterator new_finish=new_start;//内部暂无元素
 		try{
@@ -141,7 +141,10 @@ vector定义的源码如下所示：
 	}
 	}
 
-![](2.png)
+
+
+![2](stl源码剖析序列式容器.assets/2.png)
+
 注意一点，动态增加大小，从上述代码可以看出，并不是在原来的空间之后接上新的空间，而是要经过配置，复制，释放三个操作，因此，对vector的任何操作，一旦引起来空间重新配置，之前的指向原vector的迭代器就失效了，vector里面的函数包括void pop_back()、iterator erase(iterator first,iterator last)、iterator erase(iterator position)、void insert(iterator position ,size_type n,const T&x),挑选其中的几个进行复习。
 
 	iterator erase(iterator first,iterator last)
@@ -215,9 +218,10 @@ vector定义的源码如下所示：
 	}
 
 上述代码的操作可以用接下来的几幅图进行一个很直观的展示：
-![](3.png)
-![](4.png)
-![](5.png)
+![4](stl源码剖析序列式容器.assets/4.png)![3](stl源码剖析序列式容器.assets/3.png)
+
+![5](stl源码剖析序列式容器.assets/5.png)
+
 2、list
 相比较于上面说到的vector，list就复杂很多，但是它每次插入或者删除一个元素，就配置或者释放一个元素空间。因此，list对于空间的运用有绝对的精准，对于任何位置的插入或删除，list都是常数时间。这两个是最常用的容器，一般是由元素的多少，元素的构造复杂度，元素的存取行为特性等决定使用哪一种容器的。
 对于list来说，list本身和list的节点是两种不同的结构，需要对它进行分开设计，其中list的节点结构如下所示：
@@ -231,66 +235,66 @@ vector定义的源码如下所示：
 	}
 
 结构如图：
-![](6.png)
+![6](stl源码剖析序列式容器.assets/6.png)
 一个很明显的双向链表，容器中一个很重要的东西就是迭代器，并且很明显，不能再用普通指针作为迭代器了，因为list并不是在存储空间中连续存在的。list的迭代器要成功实现递增、递减、取值、成员存取等操作。所以list应该提供的是bidirectional iterators（双向迭代器）。list和vector不同的一个重要性质，无论是结合操作（splice）或是插入操作（insert）都不会造成原有的list迭代器失效，删除操作也只是让指向被删除的那个元素的迭代器失效，其它迭代器不受影响。
 
 看一看迭代器的设计：
     
     // 至于为什么不使用默认参数, 这个是因为有一些编译器不能提供推导能力,
-	// 而作者又不想维护两份代码, 故不使用默认参数
-	template<class T,class Ref,class Ptr>
-	struct _list_iterator{
-		// 定义相应型别
-		 typedef _list_iterator<T,T&,T*> iterator;
-		 typedef _list_iterator<T,Ref,Ptr> self;
-		 typedef bidirectional_iterator_tag iterator_category;
-		 typedef T value_type;
-		 typedef Ptr pointer;
-		 typedef Ref reference;
-		 typedef _list_node<T>* link_type;
-		 typedef size_t size_type;
-		 typedef ptrdiff_t difference_type;
-	    // 拥有一个指向对应结点的指针,一个普通指针，指向list节点。
-	    link_type node;
-	    // 构造函数
-	    __list_iterator() {}
-	    __list_iterator(link_type x) : node(x) {}
-	    __list_iterator(const iterator& x) : node(x.node) {}    
-	    // 在STL算法中需要迭代器提供支持
-		bool operator==(const self& x) const { return node == x.node; }
-		bool operator!=(const self& x) const { return node != x.node; }
-	    // 重载了iterator必须的操作符，对迭代器取值，取的是节点的数据值
-	    reference operator*() const { return (*node).data; }
+    // 而作者又不想维护两份代码, 故不使用默认参数
+    template<class T,class Ref,class Ptr>
+    struct _list_iterator{
+    	// 定义相应型别
+    	 typedef _list_iterator<T,T&,T*> iterator;
+    	 typedef _list_iterator<T,Ref,Ptr> self;
+    	 typedef bidirectional_iterator_tag iterator_category;
+    	 typedef T value_type;
+    	 typedef Ptr pointer;
+    	 typedef Ref reference;
+    	 typedef _list_node<T>* link_type;
+    	 typedef size_t size_type;
+    	 typedef ptrdiff_t difference_type;
+        // 拥有一个指向对应结点的指针,一个普通指针，指向list节点。
+        link_type node;
+        // 构造函数
+        __list_iterator() {}
+        __list_iterator(link_type x) : node(x) {}
+        __list_iterator(const iterator& x) : node(x.node) {}    
+        // 在STL算法中需要迭代器提供支持
+    	bool operator==(const self& x) const { return node == x.node; }
+    	bool operator!=(const self& x) const { return node != x.node; }
+        // 重载了iterator必须的操作符，对迭代器取值，取的是节点的数据值
+        reference operator*() const { return (*node).data; }
         //对迭代器的成员存取（member access）运算子的标准做法
-	    pointer operator->() const { return &(operator*()); }
-		// 前缀自加，对迭代器累加1，就是前进一个节点，为了区分前后，用++()表示前自增，用++(int)后自增，传入一个0；
-		self& operator++()
-		{
-			node = (link_type)((*node).next);
-			return *this;
-		}
-	 
-		// 后缀自加, 需要先产生自身的一个副本, 然会再对自身操作, 最后返回副本，插一句话，一般使用前自增，这样函数开销比较小。后自增还需要一个临时副本存储元素，以便操作结束之后进行加一操作。
-		self operator++(int)
-		{
-			self tmp = *this;
-			++*this;//运用了前缀自加。
-			return tmp;
-		}
-		// 前缀自减，后退一个节点。
-		self& operator--()
-		{
-			node = (link_type)((*node).prev);
-			return *this;
-		}
-	 
-		self operator--(int)
-		{
-			self tmp = *this;
-			--*this;
-			return tmp;//返回的是未做处理前的节点，符合后缀操作先操作，后运行的道理，这也是为何开销会大，生成了一个复制副本。
-		}
-	};
+        pointer operator->() const { return &(operator*()); }
+    	// 前缀自加，对迭代器累加1，就是前进一个节点，为了区分前后，用++()表示前自增，用++(int)后自增，传入一个0；
+    	self& operator++()
+    	{
+    		node = (link_type)((*node).next);
+    		return *this;
+    	}
+     
+    	// 后缀自加, 需要先产生自身的一个副本, 然会再对自身操作, 最后返回副本，插一句话，一般使用前自增，这样函数开销比较小。后自增还需要一个临时副本存储元素，以便操作结束之后进行加一操作。
+    	self operator++(int)
+    	{
+    		self tmp = *this;
+    		++*this;//运用了前缀自加。
+    		return tmp;
+    	}
+    	// 前缀自减，后退一个节点。
+    	self& operator--()
+    	{
+    		node = (link_type)((*node).prev);
+    		return *this;
+    	}
+     
+    	self operator--(int)
+    	{
+    		self tmp = *this;
+    		--*this;
+    		return tmp;//返回的是未做处理前的节点，符合后缀操作先操作，后运行的道理，这也是为何开销会大，生成了一个复制副本。
+    	}
+    };
 
 接下来说一说list的数据结构，并且list还是一个环状的双向链表，所以只需要一个指针，便可以通过遍历的方式完整的表现出整个数组。
 
@@ -307,7 +311,7 @@ vector定义的源码如下所示：
 	}
 
 为了满足vector中的很多函数，所以将node刻意的指向尾端的一个空白节点，这样就实现了前闭后开的区间要求。这样下面的这些函数都能很好的完成。
-![](7.png)
+![7](stl源码剖析序列式容器.assets/7.png)
 下面这些函数里面不仅有list的内存管理和构造，还有它的元素操作，
 
 	iterator begin(){return (link_type)((*node).next);}
@@ -321,7 +325,7 @@ vector定义的源码如下所示：
 	//取头尾节点的值
 	reference front(){return *begin();}
 	reference back(){return *(--end());}
-
+	
 	// 默认allocator为alloc, 其具体使用版本请参照<stl_alloc.h>  
 	template <class T, class Alloc = alloc>  
 	class list  
@@ -388,8 +392,9 @@ vector定义的源码如下所示：
 	        }  
 	        __STL_UNWIND(clear(); put_node(node));  
 	    }  
-	      
-	  
+
+
+​	  
 	public:  
 	    list() { empty_initialize(); }//产生一个空链表，list包含很多constructors，这是个default constructor（默认构造函数）。  
 	    iterator begin() { return (link_type)((*node).next); }  
@@ -622,12 +627,12 @@ vector定义的源码如下所示：
 	  node->next = node;  
 	  node->prev = node;  
 	} 
-    //将数值为value的所有元素移除
+	//将数值为value的所有元素移除
 	template <class T, class Alloc>  
 	void list<T, Alloc>::remove(const T& value)  
 	{  
 	    iteration first=begin();
-        iteration last=end();
+	    iteration last=end();
 		while(first!=last)
 		{
 			iterator next=first;
@@ -720,12 +725,16 @@ vector定义的源码如下所示：
 			counter[i].merge(counter[i-1]);//将所有未归并的元素归并起来，并且结果放在最后一个链表中。
 		swap(counter[fill-1]);//取出最后一个，重新交换会list中。
 	}  
-    //详细讲解过程可以看 https://blog.csdn.net/chenhanzhun/article/details/39337331
+	//详细讲解过程可以看 https://blog.csdn.net/chenhanzhun/article/details/39337331
 
 下面是一些上面可能提到的结构的图片：
-![](8.png)
-![](9.png)
-![](10.png)
+
+![8](stl源码剖析序列式容器.assets/8-1604684628750.png)
+
+![9](stl源码剖析序列式容器.assets/9.png)
+
+![10](stl源码剖析序列式容器.assets/10.png)
+
 3、deque
 deque叫做双向队列，是一种双向开口的连续线性空间（伪连续），但是它的头部操作效率奇差无比，难以被接受，并且deque和vector的差异在于deque允许参数时间内对头端进行元素的插入和删除操作，deque没有容量的概念，动态的以分段连续空间组合而成，随时可以增加一段新的空间并且链接起来。deque也提供了random access iterator，但它的迭代器也不是普通指针，复杂度远在vector之上，因此，如果对deque实现排序，可以先将deque复制到一个vector中，将vector排序完成后，复制回deque中。deque采用一小块map（不是stl的map容器）作为主控，这个map是一小块连续空间，其中每个元素都是一个指针，指向另一端较大的连续线性空间，叫做缓冲区，缓冲区才是存储空间主体，默认值0代表使用512bytes缓冲区，map使用率如果满载，利用reallocate_map（）配置一块更大的空间作为map。
 
@@ -742,10 +751,14 @@ deque叫做双向队列，是一种双向开口的连续线性空间（伪连续
 	}
 
 deque是一个分段连续空间，维持其“整体连续”假象的任务，就落在了迭代器的operator++和operator--两个运算子身上，所以deque的迭代器必须能够指出分段连续空间（缓冲区）在哪里，其次判断是否在缓冲区的边缘，并且需要跳跃至其它缓冲区，所以deque还必须掌握管控中心（map），显然它是不可能继承stl的iteration的，决定缓冲区大小的函数为buffer_size(),调用了_deque_buf_size()(全局函数)，定义如下：
+
+```
 inline size_t _deque_buf_size(size_t n,size_t sz)
 {return n!=0?n:(sz<512?size_t(512/sz):size_t(1));}
+```
+
 下图介绍了deque中迭代器、缓冲区、中控器的相互关系。
-![](11.png)
+![11](stl源码剖析序列式容器.assets/11.png)
 由上图可以看出，每个缓冲区的大小的是固定的，那么当前进到边缘的时候如何进行跳跃呢？使用set_node()函数跳一个缓冲区（可能往前或者往后）。
 
 	void set_node(map_pointer new_node)
@@ -762,7 +775,7 @@ attention：deque的迭代器没有重载STL的Iterator
 		typedef __deque_iterator<T, T&, T*, BufSiz> iterator;
 		typedef __deque_iterator<T, const T&, const T*, BufSiz> const_iterator;
 		// 因为没继承std::iterator,所以要自行撰写五个必要的迭代器相应型别： 
-        //value_type、difference_type、reference_type、pointer_type、iterator_category.
+	    //value_type、difference_type、reference_type、pointer_type、iterator_category.
 		typedef random_access_iterator_tag iterator_category;
 		typedef T value_type;
 		typedef Ptr pointer;
@@ -863,8 +876,8 @@ deque也重载了常用的运算子，以满足访问迭代器的要求。
 			difference_type node_offset =
 			offset > 0 ? offset / difference_type(buffer_size())
 			: -difference_type((-offset - 1) / buffer_size()) - 1;
-          //如果offset是正数，就直接判断他是缓冲区大小的多少倍，往后跳n个区就可以了。
-          //如果是负数，那么算它需要往前跳几个区。因为只要为负数，必定会往前跳，所以后面跟了-1。
+	      //如果offset是正数，就直接判断他是缓冲区大小的多少倍，往后跳n个区就可以了。
+	      //如果是负数，那么算它需要往前跳几个区。因为只要为负数，必定会往前跳，所以后面跟了-1。
 			set_node(node + node_offset);//切换至正确的缓冲区
 			cur = first + (offset - node_offset * difference_type(buffer_size()));//切换至正确的元素。
 		}
@@ -910,8 +923,8 @@ deque除了维护一个指向map的指针外，它还维护着一个start和一�
 
 	template<class T,class Alloc=alloc,size_t BufSiz=0>
 		class deque{
-                   //多个public可以合到一起，看你的习惯，有人喜欢把一类操作放到一起，也有的人喜欢所有都在一起
-                  //默认为private
+	               //多个public可以合到一起，看你的习惯，有人喜欢把一类操作放到一起，也有的人喜欢所有都在一起
+	              //默认为private
 					public:
 						typedef T value_type;
 						typedef value_type* pointer;
@@ -922,7 +935,7 @@ deque除了维护一个指向map的指针外，它还维护着一个start和一�
 						typedef pointer* map_pointer;//元素的指针的指针
 						map_pointer map;//指向map
 						size_type map_size;//map内可容纳多少指针。
-                        iterator start;
+	                    iterator start;
 						iterator finish;
 					public://basic accessors基本访问
 						iterator begin() { return start; }	// 返回第一个节点的迭代器
@@ -934,21 +947,21 @@ deque除了维护一个指向map的指针外，它还维护着一个start和一�
 						*	这里计算实际地址的时候是经过一系列的计算得到的，效率上有缺失
 						*/
 						reference operator[](size_type n) { return start[difference_type(n)]; }
-                        //调用了_deque_iterator<>：：operator[]
+	                    //调用了_deque_iterator<>：：operator[]
 						const_reference operator[](size_type n) const {
 						return start[difference_type(n)];
 						}
 						/**
 						* 以下函数分别返回首尾元素的引用
 						*/
-                        //调用了_deque_iterator<>：：operator*
+	                    //调用了_deque_iterator<>：：operator*
 						reference front() { return *start; }
 						reference back() {
 						iterator tmp = finish;
 						--tmp;//调用了_deque_iterator<>：：operator--
 						return *tmp;//调用了_deque_iterator<>：：operator*
 						}//为什么不用return *（finish-1）；因为_deque_iterator<>没有为（finish-1）定义运算子？侯捷的原话。
-                        //使用*（finish-1）的时候可以返回正确的结果。
+	                    //使用*（finish-1）的时候可以返回正确的结果。
 						const_reference front() const { return *start; }
 						const_reference back() const {
 						const_iterator tmp = finish;
@@ -958,9 +971,9 @@ deque除了维护一个指向map的指针外，它还维护着一个start和一�
 						//	返回deque的大小，这里直接调用迭代器重载的‘-’运算符，有两个；；，虽奇怪但是合乎语法，侯捷说的。。
 						size_type size() const { return finish - start;; }
 						//	返回deque最大容量
-                        //这个跟负数的二进制表示有关系，你可以看下补码。
-                        //简单的说，就是size_type(-1)就是最大的size_type值（size_type就是unsigned int），
-                        //这样就可以求出 max_size了,size_type代表类型，-1是值，不是很懂，依然。。。。。。
+	                    //这个跟负数的二进制表示有关系，你可以看下补码。
+	                    //简单的说，就是size_type(-1)就是最大的size_type值（size_type就是unsigned int），
+	                    //这样就可以求出 max_size了,size_type代表类型，-1是值，不是很懂，依然。。。。。。
 						size_type max_size() const { return size_type(-1); }
 						// deque为空的时, 只有一个缓冲区
 						bool empty() const { return finish == start; }
@@ -986,7 +999,7 @@ deque的构造和内存管理也比vector要复杂很多，deque执行定义了�
 		for(cur=start.node;cur<finish.node;++cur)
 		     uninitialized_fill(*cur,*cur+buffer_size(),value);
 		     uninitialized_fill(finish.first,finish.cur,value);
-             //最后一个节点的设置和上面的几个节点不一样，因为尾端可能会存在备用空间，备用空间不用设定初值。
+	         //最后一个节点的设置和上面的几个节点不一样，因为尾端可能会存在备用空间，备用空间不用设定初值。
 		
 		}
 		catch(.....)
@@ -1062,7 +1075,7 @@ deque的构造和内存管理也比vector要复杂很多，deque执行定义了�
 		_STL_TRY{
 			start.set_node(start.node-1);
 			//明显可见，指向倒数第一个元素空间
-            start.cur=start.last-1;
+	        start.cur=start.last-1;
 			construct(start.cur,t_copy);
 		}
 		catch(...){
@@ -1074,13 +1087,13 @@ deque的构造和内存管理也比vector要复杂很多，deque执行定义了�
 		}
 		
 	}
-    void reserve_map_at_back (size_type nodes_to_add = 1)
+	void reserve_map_at_back (size_type nodes_to_add = 1)
 	{
 	    if (nodes_to_add + 1 > map_size - (finish.node - map))//map的尾端备用节点空间不足了。
 	        // 此时，需要调整map，更换一个更大的map（配置更大的，拷贝原来的，释放原来的）
 	        reallocate_map(nodes_to_add, false);
 	}
-    void reserve_map_at_front (size_type nodes_to_add = 1)
+	void reserve_map_at_front (size_type nodes_to_add = 1)
 	{
 	    if (nodes_to_add  > start.node-map)//map的前端备用节点空间不足了。
 	        // 此时，需要调整map，更换一个更大的map（配置更大的，拷贝原来的，释放原来的）
@@ -1127,9 +1140,10 @@ deque的构造和内存管理也比vector要复杂很多，deque执行定义了�
 	}
 
 上述是针对deque的结构和内存管理的操作，接下来讲一讲元素操作，类似于其它容器，它也有pop_back.pop_front.clear.erase.insert等等。
-对了，在deque的迭代器中，*itr其实和*（itr.cur）的输出结果是一样的，可以从前面我们的重载代码看出，*运算符输出的是迭代器的.cur
+对了，在deque的迭代器中，*itr其实和*（itr.cur）的输出结果是一样的，可以从前面我们的重载代码看出，* 运算符输出的是迭代器的.cur
 。所以对于下面这个itr=find(deque.begin(),deque.end(),value),在找到的情况下，输出*（itr）或者输出*（tr.cur）结果是一样的，都是value（itr是迭代器，deque<int>::iterator itr）。
 	
+
 	void pop_back()
 	{
 		if(finish.cur!=finish.first)
@@ -1156,7 +1170,7 @@ deque的构造和内存管理也比vector要复杂很多，deque执行定义了�
 	void pop_front() {
 	  if (start.cur != start.last - 1)
 	  {
-        //第一个缓冲区有两个或以上的元素。
+	    //第一个缓冲区有两个或以上的元素。
 	    destroy(start.cur);//析构掉这个元素
 	    ++start.cur;//调整指针，相当于排除了第一个元素。
 	  }
@@ -1222,7 +1236,7 @@ deque的构造和内存管理也比vector要复杂很多，deque执行定义了�
 	  return start + index;
 	}
 	//擦除[first,last)区间的元素。此函数按下列步骤来擦除区间.1.需要擦除整个空间，直接调用clear()2.需要擦出中间指定区间
-    //3.擦除中间指定区间，需要考虑一下两种情况:(1)区间前面的元素少，就移动前面的元素(2)区间后面的元素少，就移动后面的元素
+	//3.擦除中间指定区间，需要考虑一下两种情况:(1)区间前面的元素少，就移动前面的元素(2)区间后面的元素少，就移动后面的元素
 	template <class T, class Alloc, size_t BufSize>
 	deque<T, Alloc, BufSize>::iterator
 	deque<T, Alloc, BufSize>::erase(iterator first, iterator last)
@@ -1254,7 +1268,7 @@ deque的构造和内存管理也比vector要复杂很多，deque执行定义了�
 	  }
 	}
 	//插入功能的函数deque提供了许多个版本，最基础最重要的就是下面这个版本，允许在某个点之前插入一个元素，并设定其值。
-    //在position出插入值为x的元素。
+	//在position出插入值为x的元素。
 	iterator insert(iterator position, const value_type& x)
 	{
 	  // 如果是在deque的最前端插入, 那么直接push_front()即可
@@ -1472,7 +1486,7 @@ queue和stack基本是上完全一样，除了它是从最底端加入元素，�
 		size_type size()const{return c.size();}
 		reference front(){return c.front();}
 		const_reference front()const{return c.front();}
-        reference back(){return c.back();}
+	    reference back(){return c.back();}
 		const_reference back()const{return c.back();}
 		//因为stack是末端进，末端出。
 		void push(const value_type&x){c.push_back(x);}
@@ -1664,8 +1678,10 @@ make_heap，将一段现有的数据转化成一个heap，代码如下：
 priority_queue独特的进出规则，所以其也不提供遍历功能，也不提供迭代器。
 8.slist
 终于，终于，终于，快一个周的断断续续，我终于写到了最后一个容器了。STL的list是一个双向链表，SGI STL提供了一个单向链表，名为slist，这就是我们要剖析的最后一个对象了，它不在标准规格之内，它和list的区别在于，它的迭代器属于单向的，但是它的操作速度更快，功能受到了一些限制，但是基本的方面都一样，其实它更像平时使用的链表，之前list的插入是插入在指定位置之前，然而作为一个单向链表，它必须从头找起，所以slist提供的是insert_after和erase_after函数，基于效率上的考虑，slist不提供push_back，只有push_front，因此元素的次序会和插入进来的次序相反，并且它的节点和迭代器的设计，架构上更加复杂，运用了继承关系，因此型别转换上很复杂，和RB_tree一样的设计方法，下图可以看到它的设计架构：
-![](12.png)
-![](13.png)
+![12](stl源码剖析序列式容器.assets/12.png)
+
+![13](stl源码剖析序列式容器.assets/13.png)
+
 __slist_node_base 是节点基类，只有一个 next指针；
 __slist_node 继承于 __slist_node_base 定义了data 数据成员；
 __slist_iterator_base 是迭代器基类，只定义了 等于== 不等于 != 方法；
@@ -1697,7 +1713,7 @@ __slist_iterator 继承于 __slist_iterator_base，跟多实现了 * -> ++ （�
 	inline _Slist_node_base* __slist_make_link(_Slist_node_base* __prev_node,_Slist_node_base* __new_node)
 	{//让新节点的下一个节点为prev节点的下一个节点
 	  __new_node->next = __prev_node->next;
-      //让prev指向新节点。
+	  //让prev指向新节点。
 	  __prev_node->next = __new_node;
 	  return __new_node;
 	}
@@ -1786,13 +1802,13 @@ __slist_iterator 继承于 __slist_iterator_base，跟多实现了 * -> ++ （�
 
         typedef __slist_iterator<T,T&,T*> iterator ;  
         typedef __slist_iterator<T,const T&,const T*> const_iterator ;  
-
+    
     private :  
         typedef __slist_node<T>   list_node ;  
         typedef __slist_node_base   list_node_base ;  
         typedef __slist_iterator_base   iterator_base ;  
         typedef simple_alloc<list_node,Alloc> list_node_allocator ;  
-
+    
         static  list_node* create_node(const value_type& x)  
         {  
             list_node* node = list_node_allocator::allocate() ; //配置空间  
@@ -1803,13 +1819,13 @@ __slist_iterator 继承于 __slist_iterator_base，跟多实现了 * -> ++ （�
             __STL_UNWIND(list_node_allocator:;deallocate(node)) ;  
             return node ;  
         }  
-
+    
         static void destroy_node(list_node* node)  
         {  
             destroy(&node->data) ; //将元素析构     
             list_node_allocator::deallocate(node) ; //释放空间  
         }  
-
+    
     private :  
         list_node_base head  ; //头部。注意，它不是指针，是实物  
 
@@ -1817,13 +1833,13 @@ __slist_iterator 继承于 __slist_iterator_base，跟多实现了 * -> ++ （�
     public:  
         slist() {head.next = 0 ;}   
         ~slist(){clear() ;}  
-
+    
     public :  
         iterator begin() {return iterator((list_node*)head.next) ;}  
         iterator end() {return iteator(0) ;}  
         iterator size() {const __slist_size(head.next) ;}  
         bool empty() const {return head.next == 0 ;}   
-
+    
         //两个slist互换：只要将head交换互指即可  
         void swap(slist &L)  
         {  
@@ -1831,19 +1847,19 @@ __slist_iterator 继承于 __slist_iterator_base，跟多实现了 * -> ++ （�
             head.next = L.head.next ;  
             L.head.next = tmp ;  
         }  
-
+    
     public :  
         //取头部元素  
         reference front() {return ((list_node*)head.next)->data ;}  
-
+    
         //从头部插入元素(新元素成为slist的第一个元素)  
         void push_front(const value_type& x)  
         {  
             __slist_make_link(&head,create_node(x)) ;  
         }  
-
+    
         //注意,没有push_back() ,因为考虑到效率。 
-
+    
         //从头部取走元素(删除之)。修改head  
         void pop_front()  
         {  
@@ -1875,9 +1891,9 @@ __slist_iterator 继承于 __slist_iterator_base，跟多实现了 * -> ++ （�
 
 
 
- 
 
-    
+
+​    
 
 
 

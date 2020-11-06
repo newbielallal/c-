@@ -45,6 +45,8 @@ Ac代码：
 	};
 
 之前一直错的代码：
+
+```
 	TreeNode* solve( vector<int>const &pre,vector<int>const &vin,int preL,int inL,int n)
 	{
 	    if(n==0)
@@ -76,5 +78,6 @@ Ac代码：
 	        return solve(pre,vin,0,0,pre.size());
 	    }
 	};
+```
 
 首先函数定义在了类的外面，还要操作类的私有变量，然后是尽然直接生成一个局部变量用来作为最终的结果。

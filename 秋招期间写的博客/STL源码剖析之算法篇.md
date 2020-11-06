@@ -52,8 +52,8 @@ tips：STl泛型算法的一般形式都是前面两个参数为一对迭代器�
 		return 0;
 	}
 
-![](1.png)
-下面就开始对上述出现的每个算法进行解析：
+![1](STL源码剖析之算法篇.assets/1.png)
+
 1.1 accumulate
 源码如下所示，用来计算区间内所有元素和init的总和，必须提供init，这样保证在区间为空时候可以获得一个拥有明确定义的值，第二个版本对每一个元素执行一个二元操作。
 
@@ -78,56 +78,56 @@ tips：STl泛型算法的一般形式都是前面两个参数为一对迭代器�
 源码如下所示，用来计算区间内相邻元素的差额，也就是说，它将*first赋给*result，针对[first+1,last)内的每个迭代器i，将*i-*（i-1）的值赋给*（result+（i-first）），第二个版本将两者相减换成提供的二元运算，当result等于first时，它是一个就地算法。
 
     template <class _InputIterator, class _OutputIterator>
-	_OutputIterator
-	adjacent_difference(_InputIterator __first,
-	                    _InputIterator __last, _OutputIterator __result)
-	{
-	  if (__first == __last) return __result;//若为空直接返回
-	  *__result = *__first;//记录下第一个元素
-	  //也可以直接写成一个函数，不必传递调用。
-	  return __adjacent_difference(__first, __last, __result,__VALUE_TYPE(__first));
-	}
-	template <class _InputIterator, class _OutputIterator, class _Tp>
-	_OutputIterator 
-	__adjacent_difference(_InputIterator __first, _InputIterator __last,
-	                      _OutputIterator __result, _Tp*)
-	{
-	  _Tp __value = *__first;
-	  while (++__first != __last) {//遍历区间
-	    _Tp __tmp = *__first;//初始化tmp
-	    *++__result = __tmp - __value;//计算相邻两元素的差额(后-前)，并赋给输出端，所以上述结果输出全是1.
-	    __value = __tmp;//更新当前值
-	  }
-	  return ++__result;
-	}
-	//版本二：可指定操作函数
-	template <class _InputIterator, class _OutputIterator, class _Tp, 
-	          class _BinaryOperation>
-	_OutputIterator
-	__adjacent_difference(_InputIterator __first, _InputIterator __last, 
-	                      _OutputIterator __result, _Tp*,
-	                      _BinaryOperation __binary_op) {
-	  _Tp __value = *__first;
-	  while (++__first != __last) {//遍历区间
-	    _Tp __tmp = *__first;//初始化tmp
-	    *++__result = __binary_op(__tmp, __value);//计算相邻两元素的加法操作，并赋给输出端
-	    __value = __tmp;//因为这里是将tmp给的value，所以value和tmp还是相加的最开始的那个数，并没有从2变到3，所以这也是为什么结果是1、3、5、7、9的原因。
-	  }
-	  return ++__result;
-	}
-	
-	template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
-	_OutputIterator 
-	adjacent_difference(_InputIterator __first, _InputIterator __last,
-	                    _OutputIterator __result, _BinaryOperation __binary_op)
-	{
-	  if (__first == __last) return __result;//若为空直接返回
-	  *__result = *__first;//初始值
-	  //调用上面的函数__adjacent_difference()
-	  return __adjacent_difference(__first, __last, __result,
-	                               __VALUE_TYPE(__first),
-	                               __binary_op);
-	}
+    _OutputIterator
+    adjacent_difference(_InputIterator __first,
+                        _InputIterator __last, _OutputIterator __result)
+    {
+      if (__first == __last) return __result;//若为空直接返回
+      *__result = *__first;//记录下第一个元素
+      //也可以直接写成一个函数，不必传递调用。
+      return __adjacent_difference(__first, __last, __result,__VALUE_TYPE(__first));
+    }
+    template <class _InputIterator, class _OutputIterator, class _Tp>
+    _OutputIterator 
+    __adjacent_difference(_InputIterator __first, _InputIterator __last,
+                          _OutputIterator __result, _Tp*)
+    {
+      _Tp __value = *__first;
+      while (++__first != __last) {//遍历区间
+        _Tp __tmp = *__first;//初始化tmp
+        *++__result = __tmp - __value;//计算相邻两元素的差额(后-前)，并赋给输出端，所以上述结果输出全是1.
+        __value = __tmp;//更新当前值
+      }
+      return ++__result;
+    }
+    //版本二：可指定操作函数
+    template <class _InputIterator, class _OutputIterator, class _Tp, 
+              class _BinaryOperation>
+    _OutputIterator
+    __adjacent_difference(_InputIterator __first, _InputIterator __last, 
+                          _OutputIterator __result, _Tp*,
+                          _BinaryOperation __binary_op) {
+      _Tp __value = *__first;
+      while (++__first != __last) {//遍历区间
+        _Tp __tmp = *__first;//初始化tmp
+        *++__result = __binary_op(__tmp, __value);//计算相邻两元素的加法操作，并赋给输出端
+        __value = __tmp;//因为这里是将tmp给的value，所以value和tmp还是相加的最开始的那个数，并没有从2变到3，所以这也是为什么结果是1、3、5、7、9的原因。
+      }
+      return ++__result;
+    }
+    
+    template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
+    _OutputIterator 
+    adjacent_difference(_InputIterator __first, _InputIterator __last,
+                        _OutputIterator __result, _BinaryOperation __binary_op)
+    {
+      if (__first == __last) return __result;//若为空直接返回
+      *__result = *__first;//初始值
+      //调用上面的函数__adjacent_difference()
+      return __adjacent_difference(__first, __last, __result,
+                                   __VALUE_TYPE(__first),
+                                   __binary_op);
+    }
 
 1.3 inner_difference
 源码如下所示，用来计算区间1和等长区间2的一般内积，同理，必须提供init，这样保证在区间为空时候可以获得一个拥有明确定义的值，第一个版本的结果会加上init，第二个版本用自己提供的仿函数来代替operator+、operator*，从头到尾执行result=binary_op1(result,binary_op2(*i,*(first2+(i-first1))))。
@@ -139,7 +139,7 @@ tips：STl泛型算法的一般形式都是前面两个参数为一对迭代器�
 	  
 	//以第一个序列的元素个数为据，将两个序列都走一遍
 	  for ( ; __first1 != __last1; ++__first1, ++__first2)
-        //所以上述例子结果等于：10+1*1+2*2+....+5*5=65
+	    //所以上述例子结果等于：10+1*1+2*2+....+5*5=65
 	    __init = __init + (*__first1 * *__first2);//执行两个序列的内积与初始值init相加
 	  return __init;
 	}
@@ -156,7 +156,7 @@ tips：STl泛型算法的一般形式都是前面两个参数为一对迭代器�
 	  //以第一个序列的元素个数为据，将两个序列都走一遍
 	  for ( ; __first1 != __last1; ++__first1, ++__first2)
 		  //首先指定__binary_op2操作，再指定__binary_op1操作，
-          //所以最后结果为5-5*5=-20
+	      //所以最后结果为5-5*5=-20
 	    __init = __binary_op1(__init, __binary_op2(*__first1, *__first2));
 	  return __init;
 	}
@@ -268,4 +268,4 @@ tips：STl泛型算法的一般形式都是前面两个参数为一对迭代器�
 
 
 
-    
+​    

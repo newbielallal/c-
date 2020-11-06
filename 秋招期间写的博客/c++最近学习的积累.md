@@ -1,11 +1,11 @@
 ---
-title: 最近关于c++学习的笔记
+title: 编码的细节
 tags:
   - c++ 
 categories: c++学习 
 ---
 
-最近学习的一些知识点
+
 
 <!-- more -->
 
@@ -17,6 +17,7 @@ categories: c++学习
 vector<int> twoSum(vector<int>& nums, int target) {
         map <int,int> res;
       
+
         map<int,int>::iterator iter;
         for(int i=0;i<nums.size();i++)
         {
@@ -25,23 +26,25 @@ vector<int> twoSum(vector<int>& nums, int target) {
             
             if(iter!=res.end())
              {
-                 
-                 
-                 return {res[target-nums[i]],i};
+                return {res[target-nums[i]],i};
              }
              res[nums[i]]=i;//将此语句放在前方就会出错。
         }
         return {-1,-1};
     }
+
+
+​          
+
 2、错误解法
-vector<int> twoSum(vector<int>& nums, int target) {
+
+    vector<int> twoSum(vector<int>& nums, int target) {
         map <int,int> res;
         vector<int> num;
         map<int,int>::iterator iter;
         for(int i=0;i<nums.size();i++)
         {
-           
-            iter = res.find(target-nums[i]);
+           iter = res.find(target-nums[i]);
              res[nums[i]]=i;
             if(iter!=res.end())
              {
@@ -66,24 +69,27 @@ vector<int> twoSum(vector<int>& nums, int target) {
 
 1018：能被5整除的二进制前缀。给定一个只包含0、1的数组，如果组成的二进制数能被5整除，就将结果加上true，反之在结果中加上false
 第一次求解：
-        vector<bool>res;
-        long int cout=0;
-        for(int i=0;i<A.size();i++)
-        {
-            cout=cout*2+A[i];
-            if(cout%5==0)
-                res.push_back(true);
-            else
-                res.push_back(false);
-            
-            
-        }
-        return res;
+
+    vector<bool>res;
+    long int cout=0;
+    for(int i=0;i<A.size();i++)
+    {
+        cout=cout*2+A[i];
+        if(cout%5==0)
+        res.push_back(true);
+        else
+        res.push_back(false);
+    }
+    return res;
 思路虽然正确，但是在A过长的时候会导致count溢出，第一次相出的办法是，如果（a+b）%5==0，那我将count减去一个很大的并且能够被5整除的数，在进行余下数字的判断。但是后来一想，不是直接取余就可以了嘛，a最大的能够被5整除的一部分，不就是a-a%5嘛。
+
+```
 a=a*2+A[i];   
 // 40ms: a*2+A[i]                 
 24ms: (a<<1)+A[i] 
 a=a%5;
+```
+
 在进行除以2或者乘以2的操作时，使用位运算普遍比使用乘除法速度要快很多。比如上面，快了接近一倍。
 
 做题的时候一定要注意边界条件的判断，尤其是变过形式之后的循环，还有就是编程的时候可以针对不同的数据设立不同的判断条件，可以很大程度上避免过多无用的运算。并且在循环很多的时候，一定要注意判断语句的位置。
@@ -103,6 +109,8 @@ strlen统计长度不包括'/0'。
 输出: 2
 解释: 3 是峰值元素，你的函数应该返回其索引 2。
 在要求时间复杂度是0（logn）的时候一般优先考虑二分查找。
+
+```
 int findPeakElement(vector<int>& nums) {
         int left=0;
         int right=nums.size()-1;
@@ -118,7 +126,9 @@ int findPeakElement(vector<int>& nums) {
         }
             //不可能存在相等的情况。
     }
-    return left;｝
+    return left;
+    }
+```
 
 声明：vector<T>  vec;
 方法一： return vec.at(vec.size()-1);
