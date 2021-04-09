@@ -1,0 +1,159 @@
+[1mdiff --git "a/\346\267\261\345\205\245\347\220\206\350\247\243\346\223\215\344\275\234\347\263\273\347\273\237\345\216\237\347\220\206/\347\254\254\344\272\214\347\253\240/2_59.c" "b/\346\267\261\345\205\245\347\220\206\350\247\243\346\223\215\344\275\234\347\263\273\347\273\237\345\216\237\347\220\206/\347\254\254\344\272\214\347\253\240/2_59.c"[m
+[1mdeleted file mode 100644[m
+[1mindex 4c05880..0000000[m
+[1m--- "a/\346\267\261\345\205\245\347\220\206\350\247\243\346\223\215\344\275\234\347\263\273\347\273\237\345\216\237\347\220\206/\347\254\254\344\272\214\347\253\240/2_59.c"[m
+[1m+++ /dev/null[m
+[36m@@ -1,14 +0,0 @@[m
+[31m-#include<stdio.h>[m
+[31m-[m
+[31m-int main()[m
+[31m-{[m
+[31m-    int x = 0x12345678;[m
+[31m-    int y = 0x87654321;[m
+[31m-[m
+[31m-    printf("x is %x!\n", x);[m
+[31m-    printf("y is %x!\n", y);[m
+[31m-    printf("answer is %x!\n", (x & 0xff) | (y & (~0 ^ 0xff)));[m
+[31m-[m
+[31m-    return 0;[m
+[31m-[m
+[31m-}[m
+\ No newline at end of file[m
+[1mdiff --git "a/\346\267\261\345\205\245\347\220\206\350\247\243\346\223\215\344\275\234\347\263\273\347\273\237\345\216\237\347\220\206/\347\254\254\344\272\214\347\253\240/2_60.c" "b/\346\267\261\345\205\245\347\220\206\350\247\243\346\223\215\344\275\234\347\263\273\347\273\237\345\216\237\347\220\206/\347\254\254\344\272\214\347\253\240/2_60.c"[m
+[1mdeleted file mode 100644[m
+[1mindex dd3fc3f..0000000[m
+[1m--- "a/\346\267\261\345\205\245\347\220\206\350\247\243\346\223\215\344\275\234\347\263\273\347\273\237\345\216\237\347\220\206/\347\254\254\344\272\214\347\253\240/2_60.c"[m
+[1m+++ /dev/null[m
+[36m@@ -1,48 +0,0 @@[m
+[31m-#include<stdio.h>[m
+[31m-[m
+[31m-int isSmallEndian()[m
+[31m-{[m
+[31m-    unsigned int a = 1;[m
+[31m-    unsigned char* p = &a;[m
+[31m-[m
+[31m-    if(1 == *p)[m
+[31m-    {[m
+[31m-        printf("%s : the computer is smallEndian\n!", __FUNCTION__);[m
+[31m-        return 1;[m
+[31m-    }[m
+[31m-[m
+[31m-    printf("%s : the computer is bigEndian\n!", __FUNCTION__);[m
+[31m-    return 0;[m
+[31m-}[m
+[31m-void replaceByte(unsigned int *x, int i, unsigned char b)[m
+[31m-{[m
+[31m-    int index = 0;[m
+[31m-    unsigned char *p = x;[m
+[31m-[m
+[31m-    if(0 == isSmallEndian())[m
+[31m-    {[m
+[31m-        i = sizeof(int) - (i + 1);[m
+[31m-    }[m
+[31m-[m
+[31m-    for(index = 0; index <=i; ++p, ++index)[m
+[31m-    {[m
+[31m-        if(index == i)[m
+[31m-        {[m
+[31m-            *p = b;[m
+[31m-            break;[m
+[31m-        }[m
+[31m-    }[m
+[31m-}[m
+[31m-[m
+[31m-int main()[m
+[31m-{[m
+[31m-    unsigned int x = 0x12345678;[m
+[31m-    int i = 0;[m
+[31m-    unsigned char b = 0xef;[m
+[31m-[m
+[31m-    printf("x is %x!\n", x);[m
+[31m-    replaceByte(&x, i, b);[m
+[31m-    printf("x is %x!\n", x);[m
+[31m-[m
+[31m-    return 0;[m
+[31m-}[m
+\ No newline at end of file[m
+[1mdiff --git "a/\346\267\261\345\205\245\347\220\206\350\247\243\346\223\215\344\275\234\347\263\273\347\273\237\345\216\237\347\220\206/\347\254\254\344\272\214\347\253\240/2_61.c" "b/\346\267\261\345\205\245\347\220\206\350\247\243\346\223\215\344\275\234\347\263\273\347\273\237\345\216\237\347\220\206/\347\254\254\344\272\214\347\253\240/2_61.c"[m
+[1mdeleted file mode 100644[m
+[1mindex c56468b..0000000[m
+[1m--- "a/\346\267\261\345\205\245\347\220\206\350\247\243\346\223\215\344\275\234\347\263\273\347\273\237\345\216\237\347\220\206/\347\254\254\344\272\214\347\253\240/2_61.c"[m
+[1m+++ /dev/null[m
+[36m@@ -1,76 +0,0 @@[m
+[31m-#include<stdio.h>[m
+[31m-[m
+[31m-void isAllOne(int x)[m
+[31m-{[m
+[31m-    printf("%s : is %d!\n", __FUNCITON__, !(x ^ ~0));[m
+[31m-}[m
+[31m-void isAllZero(int x)[m
+[31m-{[m
+[31m-    printf("%s : is %d!\n", __FUNCITON__, !(x ^ 0));[m
+[31m-}[m
+[31m-void lowByteIsAllOne(int x)[m
+[31m-{[m
+[31m-    x = x & 0xff;[m
+[31m-    x = x ^ 0xff;[m
+[31m-    printf("%s : is %d!\n", __FUNCITON__, !x);[m
+[31m-}[m
+[31m-[m
+[31m-int isSmallEndian()[m
+[31m-{[m
+[31m-    unsigned int a = 1;[m
+[31m-    unsigned char* p = &a;[m
+[31m-[m
+[31m-    if(1 == *p)[m
+[31m-    {[m
+[31m-        printf("%s : the computer is smallEndian\n!", __FUNCTION__);[m
+[31m-        return 1;[m
+[31m-    }[m
+[31m-[m
+[31m-    printf("%s : the computer is bigEndian\n!", __FUNCTION__);[m
+[31m-    return 0;[m
+[31m-}[m
+[31m-void highByteIsAllZero(int x)[m
+[31m-{[m
+[31m-    int len = sizeof(int);[m
+[31m-    unsigned char *p = x;[m
+[31m-[m
+[31m-    if(1 == isSmallEndian())[m
+[31m-    {[m
+[31m-        p = p + (len - 1);[m
+[31m-    }[m
+[31m-    *p = *p & 0xff;[m
+[31m-    printf("%s : is %d!\n", __FUNCITON__, !(*p));[m
+[31m-}[m
+[31m-[m
+[31m-int main()[m
+[31m-{[m
+[31m-    int x = ~0;[m
+[31m-    printf("x is %x!\n", x);[m
+[31m-    isAllOne(x);[m
+[31m-    isAllZero(x);[m
+[31m-    highByteIsAllZero(x);[m
+[31m-    lowByteIsAllOne(x);[m
+[31m-[m
+[31m-    x = 0x0;[m
+[31m-    printf("x is %x!\n", x);[m
+[31m-    isAllOne(x);[m
+[31m-    isAllZero(x);[m
+[31m-    highByteIsAllZero(x);[m
+[31m-    lowByteIsAllOne(x);[m
+[31m-[m
+[31m-    x= 0xff;[m
+[31m-    printf("x is %x!\n", x);[m
+[31m-    isAllOne(x);[m
+[31m-    isAllZero(x);[m
+[31m-    highByteIsAllZero(x);[m
+[31m-    lowByteIsAllOne(x);[m
+[31m-[m
+[31m-    x = 0x123456;[m
+[31m-    printf("x is %x!\n", x);[m
+[31m-    isAllOne(x);[m
+[31m-    isAllZero(x);[m
+[31m-    highByteIsAllZero(x);[m
+[31m-    lowByteIsAllOne(x);[m
+[31m-[m
+[31m-    return 0;[m
+[31m-}[m
+\ No newline at end of file[m
